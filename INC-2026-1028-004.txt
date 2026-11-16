@@ -1,0 +1,90 @@
+[SEC-OPS INCIDENT REPORT] - INC-2026-1028-004 / Password spray followed by successful sign-in and impossible travel (asharma)
+Severity Assessment: High | Confidence Score: 76%
+(risk score 77/100 | source: Entra ID Identity Protection | events: 12 | generated 2026-10-28T03:41:17Z)
+
+1. Executive Summary & Root Cause
+Between 2026-10-28T03:30:00Z and 2026-10-28T04:08:40Z, accounts administrator@corp.example, asharma@corp.example, hr.admin@corp.example +7 more produced 3 detections spanning 2 ATT&CK tactics (Initial Access, Credential Access). Root cause: valid credentials for asharma@corp.example were obtained through password spraying / brute force from 192.0.2.88 (first seen 2026-10-28T03:44:10Z, T1078, T1110.003). Contributing factors: MFA is not enrolled for asharma@corp.example; asharma@corp.example's password is 410 days old. Assessed High (risk 77/100) because of account takeover; the SOAR playbook runs 6 steps automatically.
+
+2. Threat Intelligence & Entity Enrichment
+Entity 1 (IP Address): 192.0.2.88
+    [MALICIOUS | score 87] Reputation (simulated): malicious (score 87/100) | Geo: RU | AS64498 SprayNet Ltd (fictional) | Role: password-spray | MISP: SIM-EVT-2026-0655 | cluster: SimActor-5 (fictional) | Seen in 1320 events across feeds
+Entity 2 (User Account (AD/IdP)): svc_backup@corp.example
+    [SUSPICIOUS | score 80] AD/IdP (simulated): Backup service account, IT Infrastructure | usual sign-in countries: IN | PRIVILEGED, service account, NO MFA enrolled, password 900 days old
+Entity 3 (User Account (AD/IdP)): oldcontractor@corp.example
+    [SUSPICIOUS | score 60] AD/IdP (simulated): Former contractor, Contractors | usual sign-in countries: IN | NO MFA enrolled, password 700 days old, dormant 240 days
+Entity 4 (User Account (AD/IdP)): asharma@corp.example
+    [SUSPICIOUS | score 40] AD/IdP (simulated): Anita Sharma, HR | usual sign-in countries: IN | NO MFA enrolled, password 410 days old
+Entity 5 (User Account (AD/IdP)): hr.admin@corp.example
+    [UNKNOWN | score 10] AD/IdP (simulated): account not found in the directory snapshot.
+Entity 6 (User Account (AD/IdP)): sales.lead@corp.example
+    [UNKNOWN | score 10] AD/IdP (simulated): account not found in the directory snapshot.
+Entity 7 (User Account (AD/IdP)): administrator@corp.example
+    [INFO | score 35] AD/IdP (simulated): Built-in Administrator, IT Infrastructure | usual sign-in countries: IN | PRIVILEGED, break-glass
+Entity 8 (User Account (AD/IdP)): labadmin@corp.example
+    [INFO | score 35] AD/IdP (simulated): Lab Administrator, Security Lab | usual sign-in countries: IN | PRIVILEGED
+Entity 9 (User Account (AD/IdP)): jdoe@corp.example
+    [INFO | score 5] AD/IdP (simulated): John Doe, Finance | usual sign-in countries: IN | no risk flags
+Entity 10 (User Account (AD/IdP)): mpatil@corp.example
+    [INFO | score 5] AD/IdP (simulated): Meera Patil, Sales | usual sign-in countries: IN | no risk flags
+Entity 11 (User Account (AD/IdP)): rkulkarni@corp.example
+    [INFO | score 5] AD/IdP (simulated): R. Kulkarni, IT Support | usual sign-in countries: IN | no risk flags
+Entity 12 (IP Address): 203.0.113.200
+    [CLEAN | score 3] Reputation (simulated): clean (score 3/100) | Geo: IN | AS64500 ExampleBroadband (fictional) | Role: residential-isp | MISP: No MISP events. | Seen in 0 events across feeds
+
+3. Reconstructed Incident Timeline
+`[2026-10-28T03:30:00Z]` -> 80 failed logons from 192.0.2.88 against 10 account(s) over 11m (03:30:00 to 03:41:00) -> Credential Access / T1110.003 Brute Force: Password Spraying
+`[2026-10-28T03:44:10Z]` -> Successful logon for asharma@corp.example on unknown host from 192.0.2.88 [RU] -> Initial Access / T1078 Valid Accounts; Credential Access / T1110.003 Brute Force: Password Spraying
+`[2026-10-28T04:08:40Z]` -> Successful logon for asharma@corp.example on unknown host from 203.0.113.200 [IN] -> Initial Access / T1078 Valid Accounts
+
+ATT&CK tactics observed (kill-chain order): Initial Access > Credential Access
+Detections triggered:
+  - [high] Password spraying against accounts (AUTH-BRUTEFORCE)
+      evidence: 80 failed logons from 192.0.2.88 against 10 account(s) over 11m
+  - [critical] Successful logon after brute force / spray from the same source (AUTH-COMPROMISE)
+      evidence: asharma@corp.example logged on successfully from 192.0.2.88 after 80 failures (RU)
+  - [high] Impossible travel between sign-ins (AUTH-TRAVEL)
+      evidence: asharma: RU -> IN, ~4984 km in 24m (~12206 km/h, country-centroid estimate)
+
+4. Autonomous SOAR Isolation Playbook
+Mode: SIMULATION | 6 step(s) | 6 auto-executed | 0 held for human approval by safety guardrails
+Step 1: Identity Revocation -> Revoke all sign-in sessions and force a password reset for asharma [Microsoft Entra ID]
+        API: POST https://graph.microsoft.com/v1.0/users/<UPN of asharma>/revokeSignInSessions
+        API: PATCH https://graph.microsoft.com/v1.0/users/<UPN of asharma>
+             payload: {"passwordProfile":{"forceChangePasswordNextSignIn":true}}
+        Rollback: n/a (user must re-authenticate; password reset is permanent)
+        Note: Require MFA re-registration. MFA is NOT enrolled for this user: enforce enrolment.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 2: Identity Revocation -> Revoke all sign-in sessions and force a password reset for asharma@corp.example [Microsoft Entra ID]
+        API: POST https://graph.microsoft.com/v1.0/users/asharma@corp.example/revokeSignInSessions
+        API: PATCH https://graph.microsoft.com/v1.0/users/asharma@corp.example
+             payload: {"passwordProfile":{"forceChangePasswordNextSignIn":true}}
+        Rollback: n/a (user must re-authenticate; password reset is permanent)
+        Note: Require MFA re-registration. MFA is NOT enrolled for this user: enforce enrolment.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 3: Perimeter Block -> Block 1 malicious IP address(es) at the firewall: 192.0.2.88 [Palo Alto PAN-OS]
+        API: POST https://<PAN_FW>/restapi/v10.2/Objects/Addresses?location=vsys&vsys=vsys1&name=SOAR-BLOCK-192.0.2.88
+             payload: {"entry":{"@name":"SOAR-BLOCK-192.0.2.88","ip-netmask":"192.0.2.88/32","description":"SOAR INC-2026-1028-004"}}
+        API: PUT https://<PAN_FW>/restapi/v10.2/Objects/AddressGroups?location=vsys&vsys=vsys1&name=SOAR-Blocklist
+             payload: {"entry":{"@name":"SOAR-Blocklist","static":{"member":["SOAR-BLOCK-192.0.2.88"]}}}
+        API: POST https://<PAN_FW>/api/?type=commit&cmd=<commit></commit>
+        Rollback: Remove the address objects from group SOAR-Blocklist and commit
+        Note: Private/internal addresses and the allow-list in config.json are never blocked.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 4: Scoping & Hunt -> Hunt for the same indicators on other hosts [Microsoft Sentinel + Splunk]
+        API: KQL DeviceNetworkEvents | where RemoteIP in ("192.0.2.88") or RemoteUrl in ("") | summarize count() by DeviceName
+        API: SPL index=* (dest_ip IN (192.0.2.88) OR dest IN (none)) | stats count by host, dest
+        Rollback: read-only queries
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 5: Ticketing -> Open a P1 incident ticket with the full report attached [ServiceNow]
+        API: POST https://<instance>.service-now.com/api/now/table/incident
+             payload: {"short_description":"[SecOps HIGH] Password spray followed by successful sign-in and impossible travel (asharma)","category":"Security","urgency":1,"impact":1,"description":"Alert INC-2026-1028-004 (Password spray fo...
+        Rollback: close ticket
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 6: Notification -> Page the on-call analyst [Slack]
+        API: POST https://slack.com/api/chat.postMessage
+             payload: {"channel":"#soc-incidents","text":"[SecOps HIGH] Password spray followed by successful sign-in and impossible travel (asharma): 4 steps auto-run, 0 awaiting approval"}
+        Rollback: n/a
+        Status: SIMULATED EXECUTED (no network call was sent)
+
+---
+SIMULATION: threat intelligence, directory data and SOAR actions are simulated. No API call was sent and nothing was isolated, disabled or blocked.

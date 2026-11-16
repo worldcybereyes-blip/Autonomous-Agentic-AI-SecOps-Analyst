@@ -1,0 +1,160 @@
+{
+  "alert": {
+    "id": "INC-2026-1028-005",
+    "name": "AV detection: EICAR test file on LAB-TEST-01",
+    "source": "Endpoint protection",
+    "severity_hint": "medium",
+    "events": 2,
+    "format": "json"
+  },
+  "severity": "Low",
+  "confidence": 90,
+  "risk_score": 5,
+  "mode": "simulate",
+  "generated_at": "2026-10-28T03:41:17Z",
+  "summary": "The alert 'AV detection: EICAR test file on LAB-TEST-01' contains no malicious indicators beyond a harmless test artifact. Benign: the activity is an antivirus test artifact (EICAR) rather than an attack. No containment is recommended; the ticket can be closed after analyst confirmation.",
+  "root_cause": "Benign: the activity is an antivirus test artifact (EICAR) rather than an attack.",
+  "tactics": [],
+  "entities": {
+    "hosts": [
+      "LAB-TEST-01"
+    ],
+    "users": [
+      "CORP\\labadmin"
+    ],
+    "src_ips": [],
+    "dst_ips": [],
+    "mentioned_ips": [],
+    "processes": [
+      "svchost.exe"
+    ],
+    "hashes": [
+      "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f"
+    ],
+    "urls": [],
+    "domains": [
+      "ctldl.windowsupdate.com"
+    ],
+    "first_seen": [
+      "2026-10-28T11:05:12Z"
+    ],
+    "last_seen": [
+      "2026-10-28T11:05:40Z"
+    ]
+  },
+  "enrichments": [
+    {
+      "type": "hash",
+      "value": "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f",
+      "verdict": "test",
+      "score": 5,
+      "summary": "VirusTotal (simulated): 66/72 engines flag this hash | Family: EICAR-Test-File (antivirus test file) | First seen 1990-01-01 | MISP: Not a threat: industry-standard AV test string. | Verdict: harmless TEST file, not a real threat",
+      "tags": [
+        "eicar",
+        "test-file",
+        "harmless"
+      ]
+    },
+    {
+      "type": "user",
+      "value": "CORP\\labadmin",
+      "verdict": "info",
+      "score": 35,
+      "summary": "AD/IdP (simulated): Lab Administrator, Security Lab | usual sign-in countries: IN | PRIVILEGED",
+      "tags": [
+        "PRIVILEGED"
+      ]
+    },
+    {
+      "type": "asset",
+      "value": "LAB-TEST-01",
+      "verdict": "info",
+      "score": 10,
+      "summary": "CMDB (simulated): workstation, Windows 11 Pro, criticality LOW, owner labadmin",
+      "tags": [
+        "low"
+      ]
+    },
+    {
+      "type": "domain",
+      "value": "ctldl.windowsupdate.com",
+      "verdict": "clean",
+      "score": 2,
+      "summary": "Known-good domain (allow-list) (simulated).",
+      "tags": [
+        "known-good"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "rule_id": "AV-TEST-FILE",
+      "title": "Antivirus test file (EICAR) observed - not a real threat",
+      "severity": 1,
+      "techniques": [],
+      "sources": [
+        "endpoint",
+        "threat_intel"
+      ],
+      "details": [
+        "LAB-TEST-01: C:\\Users\\labadmin\\Downloads\\eicar.com is the standard EICAR test file"
+      ],
+      "event_indexes": [
+        0
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2026-10-28T11:05:12Z",
+      "text": "AV/EDR on LAB-TEST-01: EICAR-Test-File",
+      "techniques": []
+    },
+    {
+      "time": "2026-10-28T11:05:40Z",
+      "text": "LAB-TEST-01 (svchost.exe) connected to ctldl.windowsupdate.com:443, 5.0 KB sent",
+      "techniques": []
+    }
+  ],
+  "playbook": [
+    {
+      "step": 1,
+      "category": "Triage Closure",
+      "action": "No containment: only low-severity / test artifacts were observed. Close as benign after analyst confirmation.",
+      "target": "n/a",
+      "vendor": "SOAR",
+      "status": "SIMULATED_EXECUTED",
+      "guard": "",
+      "rollback": "n/a",
+      "note": "Nothing was isolated, disabled or blocked.",
+      "calls": []
+    },
+    {
+      "step": 2,
+      "category": "Ticketing",
+      "action": "Open a low-priority ticket for the record",
+      "target": "INC-2026-1028-005",
+      "vendor": "ServiceNow",
+      "status": "SIMULATED_EXECUTED",
+      "guard": "",
+      "rollback": "close ticket",
+      "note": "",
+      "calls": [
+        {
+          "method": "POST",
+          "url": "https://<instance>.service-now.com/api/now/table/incident",
+          "payload": {
+            "short_description": "[SecOps LOW] AV detection: EICAR test file on LAB-TEST-01",
+            "category": "Security",
+            "urgency": 3,
+            "impact": 3,
+            "description": "Benign / low severity. See SecOps report."
+          },
+          "purpose": "create incident"
+        }
+      ]
+    }
+  ],
+  "notes": [],
+  "simulation_notice": "SIMULATION: threat intelligence, directory data and SOAR actions are simulated. No API call was sent and nothing was isolated, disabled or blocked."
+}

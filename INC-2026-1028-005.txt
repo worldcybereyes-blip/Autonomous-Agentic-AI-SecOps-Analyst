@@ -1,0 +1,39 @@
+[SEC-OPS INCIDENT REPORT] - INC-2026-1028-005 / AV detection: EICAR test file on LAB-TEST-01
+Severity Assessment: Low | Confidence Score: 90%
+(risk score 5/100 | source: Endpoint protection | events: 2 | generated 2026-10-28T03:41:17Z)
+
+1. Executive Summary & Root Cause
+The alert 'AV detection: EICAR test file on LAB-TEST-01' contains no malicious indicators beyond a harmless test artifact. Benign: the activity is an antivirus test artifact (EICAR) rather than an attack. No containment is recommended; the ticket can be closed after analyst confirmation.
+
+2. Threat Intelligence & Entity Enrichment
+Entity 1 (File Hash): 275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f
+    [TEST | score 5] VirusTotal (simulated): 66/72 engines flag this hash | Family: EICAR-Test-File (antivirus test file) | First seen 1990-01-01 | MISP: Not a threat: industry-standard AV test string. | Verdict: harmless TEST file, not a real threat
+Entity 2 (User Account (AD/IdP)): CORP\labadmin
+    [INFO | score 35] AD/IdP (simulated): Lab Administrator, Security Lab | usual sign-in countries: IN | PRIVILEGED
+Entity 3 (Host (CMDB)): LAB-TEST-01
+    [INFO | score 10] CMDB (simulated): workstation, Windows 11 Pro, criticality LOW, owner labadmin
+Entity 4 (Domain): ctldl.windowsupdate.com
+    [CLEAN | score 2] Known-good domain (allow-list) (simulated).
+
+3. Reconstructed Incident Timeline
+`[2026-10-28T11:05:12Z]` -> AV/EDR on LAB-TEST-01: EICAR-Test-File -> -
+`[2026-10-28T11:05:40Z]` -> LAB-TEST-01 (svchost.exe) connected to ctldl.windowsupdate.com:443, 5.0 KB sent -> -
+
+Detections triggered:
+  - [low] Antivirus test file (EICAR) observed - not a real threat (AV-TEST-FILE)
+      evidence: LAB-TEST-01: C:\Users\labadmin\Downloads\eicar.com is the standard EICAR test file
+
+4. Autonomous SOAR Isolation Playbook
+Mode: SIMULATION | 2 step(s) | 2 auto-executed | 0 held for human approval by safety guardrails
+Step 1: Triage Closure -> No containment: only low-severity / test artifacts were observed. Close as benign after analyst confirmation. [SOAR]
+        Rollback: n/a
+        Note: Nothing was isolated, disabled or blocked.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 2: Ticketing -> Open a low-priority ticket for the record [ServiceNow]
+        API: POST https://<instance>.service-now.com/api/now/table/incident
+             payload: {"short_description":"[SecOps LOW] AV detection: EICAR test file on LAB-TEST-01","category":"Security","urgency":3,"impact":3,"description":"Benign / low severity. See SecOps report."}
+        Rollback: close ticket
+        Status: SIMULATED EXECUTED (no network call was sent)
+
+---
+SIMULATION: threat intelligence, directory data and SOAR actions are simulated. No API call was sent and nothing was isolated, disabled or blocked.

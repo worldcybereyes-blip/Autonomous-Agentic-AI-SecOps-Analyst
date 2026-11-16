@@ -1,0 +1,125 @@
+[SEC-OPS INCIDENT REPORT] - INC-2026-1027-002 / LSASS access and PsExec activity from svc_backup on SRV-APP-07
+Severity Assessment: Critical | Confidence Score: 97%
+(risk score 100/100 | source: EDR + Sysmon | events: 12 | generated 2026-10-28T03:41:17Z)
+
+1. Executive Summary & Root Cause
+Between 2026-10-27T14:20:05Z and 2026-10-27T14:38:12Z, hosts DC02, FIN-DC01, SRV-APP-07 +2 more and account CORP\svc_backup produced 7 detections spanning 6 ATT&CK tactics (Initial Access, Execution, Defense Evasion, Credential Access, Discovery, Lateral Movement). Root cause: service account used for an interactive logon was the earliest high-signal activity (first seen 2026-10-27T14:20:05Z, T1078). Contributing factors: MFA is not enrolled for CORP\svc_backup; CORP\svc_backup's password is 900 days old; CORP\svc_backup is a privileged service account used interactively; critical asset(s) in scope: FIN-DC01. Assessed Critical (risk 100/100) because of credential theft, lateral movement, account takeover; the SOAR playbook runs 7 steps automatically and holds 3 for human approval.
+
+2. Threat Intelligence & Entity Enrichment
+Entity 1 (File Hash): b7e2d90c11a34f58a6c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3
+    [MALICIOUS | score 95] VirusTotal (simulated): 61/72 engines flag this hash | Family: Mimikatz-like credential dumper (simulated sample) (credential theft tool) | First seen 2026-03-02 | MISP: SIM-EVT-2026-0188 | cluster: SimActor-3 (fictional)
+Entity 2 (User Account (AD/IdP)): CORP\svc_backup
+    [SUSPICIOUS | score 80] AD/IdP (simulated): Backup service account, IT Infrastructure | usual sign-in countries: IN | PRIVILEGED, service account, NO MFA enrolled, password 900 days old
+Entity 3 (Host (CMDB)): DC02
+    [INFO | score 10] CMDB (simulated): domain_controller, Windows Server 2019, criticality CRITICAL
+Entity 4 (Host (CMDB)): FIN-DC01
+    [INFO | score 10] CMDB (simulated): domain_controller, Windows Server 2022, criticality CRITICAL
+Entity 5 (Host (CMDB)): SRV-APP-07
+    [INFO | score 10] CMDB (simulated): server, Windows Server 2022, criticality HIGH
+Entity 6 (Host (CMDB)): SRV-FILE-02
+    [INFO | score 10] CMDB (simulated): file_server, Windows Server 2019, criticality HIGH
+Entity 7 (Host (CMDB)): SRV-SQL-01
+    [INFO | score 10] CMDB (simulated): database_server, Windows Server 2022, criticality CRITICAL
+Entity 8 (Internal IP addresses): 10.20.5.77, 10.20.8.31
+    [INTERNAL] Private address space: no external reputation (simulated).
+
+3. Reconstructed Incident Timeline
+`[2026-10-27T14:20:05Z]` -> Successful logon (RDP) for CORP\svc_backup on SRV-APP-07 from 10.20.5.77 -> Initial Access / T1078 Valid Accounts
+`[2026-10-27T14:22:40Z]` -> explorer.exe started cmd.exe on SRV-APP-07 as CORP\svc_backup: cmd.exe /c whoami & net group "Domain Admins" /domain & nltest /dclist:corp.example -> Discovery / T1018 Remote System Discovery; Discovery / T1033 System Owner/User Discovery; Discovery / T1087 Account Discovery
+`[2026-10-27T14:25:10Z]` -> cmd.exe started procdump64.exe on SRV-APP-07 as CORP\svc_backup: procdump64.exe -accepteula -ma lsass.exe C:\Windows\Temp\l.dmp -> Credential Access / T1003.001 OS Credential Dumping: LSASS Memory
+`[2026-10-27T14:25:12Z]` -> Process access (event 10) on SRV-APP-07: procdump64.exe opened a handle to lsass.exe with access mask 0x1fffff -> Credential Access / T1003.001 OS Credential Dumping: LSASS Memory
+`[2026-10-27T14:27:33Z]` -> cmd.exe started mm.exe on SRV-APP-07 as CORP\svc_backup: mm.exe "privilege::debug" "sekurlsa::logonpasswords" exit -> Credential Access / T1003.001 OS Credential Dumping: LSASS Memory; Execution / T1204.002 User Execution: Malicious File
+`[2026-10-27T14:31:02Z]` -> mm.exe started cmd.exe on SRV-APP-07 as CORP\svc_backup: cmd.exe /c C:\Windows\Temp\psexec64.exe \\FIN-DC01 -u CORP\administrator -p ******** -s cmd.exe -> Lateral Movement / T1021.002 Remote Services: SMB/Windows Admin Shares; Lateral Movement / T1570 Lateral Tool Transfer
+`[2026-10-27T14:31:20Z]` -> Successful logon (network) for CORP\svc_backup on SRV-FILE-02 from 10.20.8.31 -> Lateral Movement / T1021.002 Remote Services: SMB/Windows Admin Shares
+`[2026-10-27T14:31:48Z]` -> Successful logon (network) for CORP\svc_backup on SRV-SQL-01 from 10.20.8.31 -> Lateral Movement / T1021.002 Remote Services: SMB/Windows Admin Shares
+`[2026-10-27T14:32:30Z]` -> Successful logon (network) for CORP\svc_backup on FIN-DC01 from 10.20.8.31 -> Lateral Movement / T1021.002 Remote Services: SMB/Windows Admin Shares
+`[2026-10-27T14:33:05Z]` -> Successful logon (network) for CORP\svc_backup on DC02 from 10.20.8.31 -> Lateral Movement / T1021.002 Remote Services: SMB/Windows Admin Shares
+`[2026-10-27T14:38:10Z]` -> psexesvc.exe started wevtutil.exe on FIN-DC01 as CORP\svc_backup: wevtutil.exe cl Security -> Defense Evasion / T1070.001 Indicator Removal: Clear Windows Event Logs
+`[2026-10-27T14:38:12Z]` -> The audit log was cleared -> Defense Evasion / T1070.001 Indicator Removal: Clear Windows Event Logs
+
+ATT&CK tactics observed (kill-chain order): Initial Access > Execution > Defense Evasion > Credential Access > Discovery > Lateral Movement
+Detections triggered:
+  - [high] Service account used for an interactive logon (PRIV-SVC-INTERACTIVE)
+      evidence: CORP\svc_backup interactive logon on SRV-APP-07
+  - [medium] Burst of host / account / network discovery commands (DISC-BURST)
+      evidence: SRV-APP-07: 3 discovery techniques within 10 minutes
+  - [critical] Credential dumping from LSASS memory (CRED-LSASS)
+      evidence: SRV-APP-07: C:\Windows\Temp\procdump64.exe procdump64.exe -accepteula -ma lsass.exe C:\Windows\Temp\l.dmp
+      evidence: SRV-APP-07: C:\Windows\Temp\mm.exe mm.exe "privilege::debug" "sekurlsa::logonpasswords" exit
+  - [critical] Known-malicious file hash observed: Mimikatz-like credential dumper (simulated sample) (TI-HASH-MALICIOUS)
+      evidence: SRV-APP-07: C:\Windows\Temp\mm.exe (Mimikatz-like credential dumper (simulated sample)) 61/72 engines
+  - [high] Remote execution / file copy over SMB admin shares (PsExec-style) (LAT-SMB-ADMINSHARE)
+      evidence: SRV-APP-07: C:\Windows\System32\cmd.exe cmd.exe /c C:\Windows\Temp\psexec64.exe \\FIN-DC01 -u CORP\administrator -p ******** -s cmd.exe
+  - [high] One source logged on to many hosts in a short time (LAT-MULTIHOST-LOGON)
+      evidence: 10.20.8.31 reached 4 hosts within 15 minutes (DC02, FIN-DC01, SRV-FILE-02, SRV-SQL-01)
+  - [high] Windows event logs cleared (EVADE-CLEAR-LOGS)
+      evidence: FIN-DC01: C:\Windows\System32\wevtutil.exe wevtutil.exe cl Security
+      evidence: FIN-DC01: audit log cleared (event 1102)
+
+4. Autonomous SOAR Isolation Playbook
+Mode: SIMULATION | 10 step(s) | 7 auto-executed | 3 held for human approval by safety guardrails
+Step 1: Network Containment -> Isolate host FIN-DC01 from the network (agent stays connected for triage) [CrowdStrike Falcon]
+        API: GET https://api.crowdstrike.com/devices/queries/devices/v1?filter=hostname:'FIN-DC01'
+        API: POST https://api.crowdstrike.com/devices/entities/devices-actions/v2?action_name=contain
+             payload: {"ids":["<device_id of FIN-DC01>"]}
+        Rollback: POST same endpoint with action_name=lift_containment
+        Status: HELD FOR APPROVAL - Critical / protected asset (domain controller). Isolating it can cause an outage; a human must approve.
+Step 2: Network Containment -> Isolate host SRV-APP-07 from the network (agent stays connected for triage) [CrowdStrike Falcon]
+        API: GET https://api.crowdstrike.com/devices/queries/devices/v1?filter=hostname:'SRV-APP-07'
+        API: POST https://api.crowdstrike.com/devices/entities/devices-actions/v2?action_name=contain
+             payload: {"ids":["<device_id of SRV-APP-07>"]}
+        Rollback: POST same endpoint with action_name=lift_containment
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 3: Identity Revocation -> Revoke all sign-in sessions and force a password reset for CORP\svc_backup [Microsoft Entra ID]
+        API: POST https://graph.microsoft.com/v1.0/users/<UPN of CORP\svc_backup>/revokeSignInSessions
+        API: PATCH https://graph.microsoft.com/v1.0/users/<UPN of CORP\svc_backup>
+             payload: {"passwordProfile":{"forceChangePasswordNextSignIn":true}}
+        Rollback: n/a (user must re-authenticate; password reset is permanent)
+        Note: Require MFA re-registration. MFA is NOT enrolled for this user: enforce enrolment.
+        Status: HELD FOR APPROVAL - Protected / break-glass account (CORP\svc_backup). Revoking it may lock out administrators.
+Step 4: Endpoint Eradication -> Add 1 malicious file hash(es) to the EDR block list (prevent + remediate) [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/iocs/entities/indicators/v1
+             payload: {"comment":"SOAR INC-2026-1027-002","indicators":[{"type":"sha256","value":"b7e2d90c11a34f58a6c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3","action":"prevent","severity":"high","platforms":["windows"],"applied_globa...
+        Rollback: DELETE https://api.crowdstrike.com/iocs/entities/indicators/v1?ids=<indicator ids>
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 5: Endpoint Eradication -> Terminate process tree and quarantine image: wevtutil.exe on FIN-DC01 [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/real-time-response/combined/batch-active-responder-command/v1
+             payload: {"base_command":"kill","command_string":"kill <PID resolved from process tree: wevtutil.exe>","host_ids":["<device_id of FIN-DC01>"]}
+        API: POST https://api.crowdstrike.com/real-time-response/combined/batch-active-responder-command/v1
+             payload: {"base_command":"rm","command_string":"rm <image path of wevtutil.exe> (after copy to quarantine)","host_ids":["<device_id of FIN-DC01>"]}
+        Rollback: n/a (process termination is not reversible; restore file from quarantine copy)
+        Note: Resolve the PID from the EDR process tree; never kill by image name alone.
+        Status: HELD FOR APPROVAL - Critical / protected asset (FIN-DC01): killing processes may disrupt services.
+Step 6: Endpoint Eradication -> Terminate process tree and quarantine image: cmd.exe, mm.exe, procdump64.exe on SRV-APP-07 [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/real-time-response/combined/batch-active-responder-command/v1
+             payload: {"base_command":"kill","command_string":"kill <PID resolved from process tree: cmd.exe, mm.exe, procdump64.exe>","host_ids":["<device_id of SRV-APP-07>"]}
+        API: POST https://api.crowdstrike.com/real-time-response/combined/batch-active-responder-command/v1
+             payload: {"base_command":"rm","command_string":"rm <image path of cmd.exe, mm.exe, procdump64.exe> (after copy to quarantine)","host_ids":["<device_id of SRV-APP-07>"]}
+        Rollback: n/a (process termination is not reversible; restore file from quarantine copy)
+        Note: Resolve the PID from the EDR process tree; never kill by image name alone.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 7: Forensic Preservation -> Collect a triage package (processes, network, autoruns, prefetch) from SRV-APP-07 [CrowdStrike Falcon]
+        API: POST https://api.crowdstrike.com/real-time-response/entities/sessions/v1
+             payload: {"device_id":"<device_id of SRV-APP-07>","queue_offline":false}
+        API: POST https://api.crowdstrike.com/real-time-response/entities/active-responder-command/v1
+             payload: {"base_command":"runscript","command_string":"runscript -CloudFile=\"triage_collector\"","session_id":"<session id>"}
+        Rollback: n/a
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 8: Scoping & Hunt -> Hunt for the same indicators on other hosts [Microsoft Sentinel + Splunk]
+        API: KQL DeviceFileEvents | where SHA256 in ("b7e2d90c11a34f58a6c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3") | summarize hosts=dcount(DeviceName) by DeviceName
+        Rollback: read-only queries
+        Note: Possible lateral-movement targets to triage next (not isolated automatically): DC02, FIN-DC01, SRV-FILE-02, SRV-SQL-01.
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 9: Ticketing -> Open a P1 incident ticket with the full report attached [ServiceNow]
+        API: POST https://<instance>.service-now.com/api/now/table/incident
+             payload: {"short_description":"[SecOps CRITICAL] LSASS access and PsExec activity from svc_backup on SRV-APP-07","category":"Security","urgency":1,"impact":1,"description":"Alert INC-2026-1027-002 (LSASS access and PsExec acti...
+        Rollback: close ticket
+        Status: SIMULATED EXECUTED (no network call was sent)
+Step 10: Notification -> Page the on-call analyst and request approval for held steps [Slack]
+        API: POST https://slack.com/api/chat.postMessage
+             payload: {"channel":"#soc-incidents","text":"[SecOps CRITICAL] LSASS access and PsExec activity from svc_backup on SRV-APP-07: 5 steps auto-run, 3 awaiting approval"}
+        Rollback: n/a
+        Status: SIMULATED EXECUTED (no network call was sent)
+
+---
+SIMULATION: threat intelligence, directory data and SOAR actions are simulated. No API call was sent and nothing was isolated, disabled or blocked.
